@@ -9,6 +9,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "bayer.h"
+
 /**
  *
  * Attributes that can be passed by ImageMagick
@@ -34,316 +36,71 @@
  *  ./Bayer2RGB -i %i -o %o -w %x -h %y -b %q
  */
 
-/**
- * RAW sensor filters. These elementary tiles tesselate the image plane in RAW modes. RGGB should be interpreted in 2D as
- *
- *    RG
- *    GB
- *
- * and similarly for other filters.
- */
-typedef enum {
-    COLOR_FILTER_RGGB = 512,
-    COLOR_FILTER_GBRG,
-    COLOR_FILTER_GRBG,
-    COLOR_FILTER_BGGR
-} color_filter_t;
-#define COLOR_FILTER_MIN        COLOR_FILTER_RGGB
-#define COLOR_FILTER_MAX        COLOR_FILTER_BGGR
-#define COLOR_FILTER_NUM       (COLOR_FILTER_MAX - COLOR_FILTER_MIN + 1)
 
-#define CLIP(in, out)\
-   in = in < 0 ? 0 : in;\
-   in = in > 255 ? 255 : in;\
-   out=in;
 
-#define CLIP16(in, out, bits)\
-   in = in < 0 ? 0 : in;\
-   in = in > ((1<<bits)-1) ? ((1<<bits)-1) : in;\
-   out=in;
-
-void
-ClearBorders(uint8_t *rgb, int sx, int sy, int w)
+dc1394bayer_method_t
+getMethod(char* m)
 {
-    int i, j;
-    // black edges are added with a width w:
-    i = 3 * sx * w - 1;
-    j = 3 * sx * sy - 1;
-    while (i >= 0) {
-        rgb[i--] = 0;
-        rgb[j--] = 0;
-    }
+	if( strcmp(m, "NEAREST") == 0 )
+		return DC1394_BAYER_METHOD_NEAREST;
+	if( strcmp(m, "SIMPLE") == 0 )
+		return DC1394_BAYER_METHOD_SIMPLE;
+	if( strcmp(m, "BILINEAR") == 0 )
+		return DC1394_BAYER_METHOD_BILINEAR;
+	if( strcmp(m, "HQLINEAR") == 0 )
+		return DC1394_BAYER_METHOD_HQLINEAR;
+	if( strcmp(m, "DOWNSAMPLE") == 0 )
+		return DC1394_BAYER_METHOD_DOWNSAMPLE;
+	if( strcmp(m, "EDGESENSE") == 0 )
+		return DC1394_BAYER_METHOD_EDGESENSE;
+	if( strcmp(m, "VNG") == 0 )
+		return DC1394_BAYER_METHOD_VNG;
+	if( strcmp(m, "AHD") == 0 )
+		return DC1394_BAYER_METHOD_AHD;
 
-    int low = sx * (w - 1) * 3 - 1 + w * 3;
-    i = low + sx * (sy - w * 2 + 1) * 3;
-    while (i > low) {
-        j = 6 * w;
-        while (j > 0) {
-            rgb[i--] = 0;
-            j--;
-        }
-        i -= (sx - 2 * w) * 3;
-    }
+	printf("WARNING: Unrecognized method, defaulting to BILINEAR\n");
+	return DC1394_BAYER_METHOD_BILINEAR;
+}
+
+
+dc1394color_filter_t
+getFirstColor(char *f)
+{
+	if( strlen(f) < 2 )
+		goto fc_unrec;
+	if( strcmp(f, "RGGB") == 0 )
+		return DC1394_COLOR_FILTER_RGGB;
+	if( strcmp(f, "GBRG") == 0 )
+		return DC1394_COLOR_FILTER_GBRG;
+	if( strcmp(f, "GRBG") == 0 )
+		return DC1394_COLOR_FILTER_GRBG;
+	if( strcmp(f, "BGGR") == 0 )
+		return DC1394_COLOR_FILTER_BGGR;
+fc_unrec:
+	printf("WARNING: Unrecognized first color, defaulting to RGGB\n");
+	return DC1394_COLOR_FILTER_RGGB;
 }
 
 void
-ClearBorders_uint16(uint16_t * rgb, int sx, int sy, int w)
+usage( char * name )
 {
-    int i, j;
-
-    // black edges:
-    i = 3 * sx * w - 1;
-    j = 3 * sx * sy - 1;
-    while (i >= 0) {
-        rgb[i--] = 0;
-        rgb[j--] = 0;
-    }
-
-    int low = sx * (w - 1) * 3 - 1 + w * 3;
-    i = low + sx * (sy - w * 2 + 1) * 3;
-    while (i > low) {
-        j = 6 * w;
-        while (j > 0) {
-            rgb[i--] = 0;
-            j--;
-        }
-        i -= (sx - 2 * w) * 3;
-    }
-
+	printf("usage: %s\n", name);
+	printf("   --input,-i     input file\n");
+	printf("   --output,-o    output file\n");
+	printf("   --width,-w     image width (pixels)\n");
+	printf("   --height,-v    image height (pixels)\n");
+	printf("   --bpp,-b       bits per pixel\n");
+	printf("   --first,-f     first pixel color: RGGB, GBRG, GRBG, BGGR\n");
+	printf("   --method,-m    interpolation method: NEAREST, SIMPLE, BILINEAR, HQLINEAR, DOWNSAMPLE, EDGESENSE, VNG, AHD\n");
+	printf("   --help,-h      this helpful message.\n");
 }
-
-/* OpenCV's Bayer decoding */
-int
-bayer_Bilinear(const uint8_t * bayer, uint8_t * rgb, int sx, int sy, int tile)
-{
-    const int bayerStep = sx;
-    const int rgbStep = 3 * sx;
-    int width = sx;
-    int height = sy;
-    /*
-       the two letters  of the OpenCV name are respectively
-       the 4th and 3rd letters from the blinky name,
-       and we also have to switch R and B (OpenCV is BGR)
-
-       CV_BayerBG2BGR <-> COLOR_FILTER_BGGR
-       CV_BayerGB2BGR <-> COLOR_FILTER_GBRG
-       CV_BayerGR2BGR <-> COLOR_FILTER_GRBG
-
-       int blue = tile == CV_BayerBG2BGR || tile == CV_BayerGB2BGR ? -1 : 1;
-       int start_with_green = tile == CV_BayerGB2BGR || tile == CV_BayerGR2BGR;
-     */
-    int blue = tile == COLOR_FILTER_BGGR || tile == COLOR_FILTER_GBRG ? -1 : 1;
-    int start_with_green = tile == COLOR_FILTER_GBRG || tile == COLOR_FILTER_GRBG;
-
-    fprintf(stderr, "***Here: %s:%d\n",__FILE__,__LINE__);
-
-    if ((tile>COLOR_FILTER_MAX)||(tile<COLOR_FILTER_MIN))
-    {
-        printf("Invalid color filter: %d\n", tile);
-        return -1; //INVALID_COLOR_FILTER;
-    }
-
-    fprintf(stderr, "***Here: %s:%d\n",__FILE__,__LINE__);
-    ClearBorders(rgb, sx, sy, 1);
-    fprintf(stderr, "***Here: %s:%d\n",__FILE__,__LINE__);
-    rgb += rgbStep + 3 + 1;
-    height -= 2;
-    width -= 2;
-
-    for (; height--; bayer += bayerStep, rgb += rgbStep) {
-        int t0, t1;
-        const uint8_t *bayerEnd = bayer + width;
-
-        if (start_with_green) {
-            /* OpenCV has a bug in the next line, which was
-               t0 = (bayer[0] + bayer[bayerStep * 2] + 1) >> 1; */
-            t0 = (bayer[1] + bayer[bayerStep * 2 + 1] + 1) >> 1;
-            t1 = (bayer[bayerStep] + bayer[bayerStep + 2] + 1) >> 1;
-            rgb[-blue] = (uint8_t) t0;
-            rgb[0] = bayer[bayerStep + 1];
-            rgb[blue] = (uint8_t) t1;
-#if 0
-            printf("%p %d %d\n", &rgb[-blue], t0, rgb[-blue]);
-            printf("%p %d %d\n", rgb, bayer[bayerStep + 1], rgb[0]);
-            printf("%p %d %d\n", &rgb[blue], t1, rgb[blue]);
-#endif
-            bayer++;
-            rgb += 3;
-        }
-
-        if (blue > 0) {
-            for (; bayer <= bayerEnd - 2; bayer += 2, rgb += 6) {
-                t0 = (bayer[0] + bayer[2] + bayer[bayerStep * 2] +
-                      bayer[bayerStep * 2 + 2] + 2) >> 2;
-                t1 = (bayer[1] + bayer[bayerStep] +
-                      bayer[bayerStep + 2] + bayer[bayerStep * 2 + 1] +
-                      2) >> 2;
-                rgb[-1] = (uint8_t) t0;
-                rgb[0] = (uint8_t) t1;
-                rgb[1] = bayer[bayerStep + 1];
-#if 0
-                printf("%p %d %d\n", &rgb[-1], t0, rgb[-1]);
-                printf("%p %d %d\n", rgb, bayer[bayerStep + 1], rgb[0]);
-                printf("%p %d %d\n", &rgb[1], t1, rgb[1]);
-#endif
-                t0 = (bayer[2] + bayer[bayerStep * 2 + 2] + 1) >> 1;
-                t1 = (bayer[bayerStep + 1] + bayer[bayerStep + 3] +
-                      1) >> 1;
-                rgb[2] = (uint8_t) t0;
-                rgb[3] = bayer[bayerStep + 2];
-                rgb[4] = (uint8_t) t1;
-#if 0
-                printf("%p %d %d\n", &rgb[2], t0, rgb[2]);
-                printf("%p %d %d\n", rgb, bayer[bayerStep + 2], rgb[3]);
-                printf("%p %d %d\n", &rgb[4], t1, rgb[4]);
-#endif
-            }
-        } else {
-            for (; bayer <= bayerEnd - 2; bayer += 2, rgb += 6) {
-                t0 = (bayer[0] + bayer[2] + bayer[bayerStep * 2] +
-                      bayer[bayerStep * 2 + 2] + 2) >> 2;
-                t1 = (bayer[1] + bayer[bayerStep] +
-                      bayer[bayerStep + 2] + bayer[bayerStep * 2 + 1] +
-                      2) >> 2;
-                rgb[1] = (uint8_t) t0;
-                rgb[0] = (uint8_t) t1;
-                rgb[-1] = bayer[bayerStep + 1];
-
-                t0 = (bayer[2] + bayer[bayerStep * 2 + 2] + 1) >> 1;
-                t1 = (bayer[bayerStep + 1] + bayer[bayerStep + 3] +
-                      1) >> 1;
-                rgb[4] = (uint8_t) t0;
-                rgb[3] = bayer[bayerStep + 2];
-                rgb[2] = (uint8_t) t1;
-            }
-        }
-
-        if (bayer < bayerEnd) {
-            t0 = (bayer[0] + bayer[2] + bayer[bayerStep * 2] +
-                  bayer[bayerStep * 2 + 2] + 2) >> 2;
-            t1 = (bayer[1] + bayer[bayerStep] +
-                  bayer[bayerStep + 2] + bayer[bayerStep * 2 + 1] +
-                  2) >> 2;
-            rgb[-blue] = (uint8_t) t0;
-            rgb[0] = (uint8_t) t1;
-            rgb[blue] = bayer[bayerStep + 1];
-            bayer++;
-            rgb += 3;
-        }
-
-        bayer -= width;
-        rgb -= width * 3;
-
-        blue = -blue;
-        start_with_green = !start_with_green;
-    }
-    fprintf(stderr, "***Here: %s:%d\n",__FILE__,__LINE__);
-    return 0; //DC1394_SUCCESS;
-}
-
-/* OpenCV's Bayer decoding */
-int
-bayer_Bilinear_uint16(const uint16_t * bayer, uint16_t * rgb, int sx, int sy, int tile, int bits)
-{
-    const int bayerStep = sx;
-    const int rgbStep = 3 * sx;
-    int width = sx;
-    int height = sy;
-    int blue = tile == COLOR_FILTER_BGGR
-        || tile == COLOR_FILTER_GBRG ? -1 : 1;
-    int start_with_green = tile == COLOR_FILTER_GBRG
-        || tile == COLOR_FILTER_GRBG;
-
-    if ((tile>COLOR_FILTER_MAX)||(tile<COLOR_FILTER_MIN))
-      return -1; //DC1394_INVALID_COLOR_FILTER;
-
-    rgb += rgbStep + 3 + 1;
-    height -= 2;
-    width -= 2;
-
-    for (; height--; bayer += bayerStep, rgb += rgbStep) {
-        int t0, t1;
-        const uint16_t *bayerEnd = bayer + width;
-
-        if (start_with_green) {
-            /* OpenCV has a bug in the next line, which was
-               t0 = (bayer[0] + bayer[bayerStep * 2] + 1) >> 1; */
-            t0 = (bayer[1] + bayer[bayerStep * 2 + 1] + 1) >> 1;
-            t1 = (bayer[bayerStep] + bayer[bayerStep + 2] + 1) >> 1;
-            rgb[-blue] = (uint16_t) t0;
-            rgb[0] = bayer[bayerStep + 1];
-            rgb[blue] = (uint16_t) t1;
-            bayer++;
-            rgb += 3;
-        }
-
-        if (blue > 0) {
-            for (; bayer <= bayerEnd - 2; bayer += 2, rgb += 6) {
-                t0 = (bayer[0] + bayer[2] + bayer[bayerStep * 2] +
-                      bayer[bayerStep * 2 + 2] + 2) >> 2;
-                t1 = (bayer[1] + bayer[bayerStep] +
-                      bayer[bayerStep + 2] + bayer[bayerStep * 2 + 1] +
-                      2) >> 2;
-                rgb[-1] = (uint16_t) t0;
-                rgb[0] = (uint16_t) t1;
-                rgb[1] = bayer[bayerStep + 1];
-
-                t0 = (bayer[2] + bayer[bayerStep * 2 + 2] + 1) >> 1;
-                t1 = (bayer[bayerStep + 1] + bayer[bayerStep + 3] +
-                      1) >> 1;
-                rgb[2] = (uint16_t) t0;
-                rgb[3] = bayer[bayerStep + 2];
-                rgb[4] = (uint16_t) t1;
-            }
-        } else {
-            for (; bayer <= bayerEnd - 2; bayer += 2, rgb += 6) {
-                t0 = (bayer[0] + bayer[2] + bayer[bayerStep * 2] +
-                      bayer[bayerStep * 2 + 2] + 2) >> 2;
-                t1 = (bayer[1] + bayer[bayerStep] +
-                      bayer[bayerStep + 2] + bayer[bayerStep * 2 + 1] +
-                      2) >> 2;
-                rgb[1] = (uint16_t) t0;
-                rgb[0] = (uint16_t) t1;
-                rgb[-1] = bayer[bayerStep + 1];
-
-                t0 = (bayer[2] + bayer[bayerStep * 2 + 2] + 1) >> 1;
-                t1 = (bayer[bayerStep + 1] + bayer[bayerStep + 3] +
-                      1) >> 1;
-                rgb[4] = (uint16_t) t0;
-                rgb[3] = bayer[bayerStep + 2];
-                rgb[2] = (uint16_t) t1;
-            }
-        }
-
-        if (bayer < bayerEnd) {
-            t0 = (bayer[0] + bayer[2] + bayer[bayerStep * 2] +
-                  bayer[bayerStep * 2 + 2] + 2) >> 2;
-            t1 = (bayer[1] + bayer[bayerStep] +
-                  bayer[bayerStep + 2] + bayer[bayerStep * 2 + 1] +
-                  2) >> 2;
-            rgb[-blue] = (uint16_t) t0;
-            rgb[0] = (uint16_t) t1;
-            rgb[blue] = bayer[bayerStep + 1];
-            bayer++;
-            rgb += 3;
-        }
-
-        bayer -= width;
-        rgb -= width * 3;
-
-        blue = -blue;
-        start_with_green = !start_with_green;
-    }
-
-    return 0;//DC1394_SUCCESS;
-}
-
 
 int
 main( int argc, char ** argv )
 {
     uint32_t ulInSize, ulOutSize, ulWidth, ulHeight, ulBpp;
-    int first_color = COLOR_FILTER_RGGB;
+    int first_color = DC1394_COLOR_FILTER_RGGB;
+	int method = DC1394_BAYER_METHOD_BILINEAR;
     char *infile, *outfile;
     int input_fd = 0;
     int output_fd = 0;
@@ -356,14 +113,15 @@ main( int argc, char ** argv )
         {"input",1,NULL,'i'},
         {"output",1,NULL,'o'},
         {"width",1,NULL,'w'},
-        {"height",1,NULL,'h'},
+        {"height",1,NULL,'v'},
+        {"help",0,NULL,'h'},
         {"bpp",1,NULL,'b'},
         {"first",1,NULL,'f'},
         {"method",1,NULL,'m'},
         {0,0,0,0}
     };
 
-    while ((c=getopt_long(argc,argv,"i:o:w:h:b:f:",longopt,&optidx)) != -1)
+    while ((c=getopt_long(argc,argv,"i:o:w:v:b:f:m:h",longopt,&optidx)) != -1)
     {
         switch ( c )
         {
@@ -376,21 +134,25 @@ main( int argc, char ** argv )
             case 'w':
                 ulWidth = strtol( optarg, NULL, 10 );
                 break;
-            case 'h':
+            case 'v':
                 ulHeight = strtol( optarg, NULL, 10 );
                 break;
             case 'b':
                 ulBpp = strtol( optarg, NULL, 10 );
                 break;
             case 'f':
-				//TODO: Parse this
-                first_color = COLOR_FILTER_RGGB;
+                first_color = getFirstColor( optarg );
                 break;
             case 'm':
-				//TODO: implement methods
+				method = getMethod( optarg );
                 break;
+			case 'h':
+				usage(argv[0]);
+				return 0;
+				break;
             default:
                 printf("bad arg\n");
+				usage(argv[0]);
                 return 1;
         }
     }
@@ -398,6 +160,7 @@ main( int argc, char ** argv )
     if( infile == NULL || outfile == NULL || ulBpp == 0 || ulWidth == 0 || ulHeight == 0 )
     {
         printf("Bad parameter\n");
+		usage(argv[0]);
         return 1;
     }
 
@@ -408,7 +171,7 @@ main( int argc, char ** argv )
         return 1;
     }
 
-    output_fd = open(outfile, O_RDWR | O_CREAT | O_TRUNC);
+    output_fd = open(outfile, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
     if(output_fd <= 0)
     {
         printf("Problem opening output: %s\n", outfile);
@@ -443,11 +206,11 @@ main( int argc, char ** argv )
 	switch(ulBpp)
 	{
 		case 8:
-			bayer_Bilinear((uint8_t*)pbyBayer, (uint8_t*)pbyRGB, ulWidth, ulHeight, first_color);
+			dc1394_bayer_decoding_8bit((uint8_t*)pbyBayer, (uint8_t*)pbyRGB, ulWidth, ulHeight, first_color, method);
 			break;
 		case 16:
 		default:
-			bayer_Bilinear_uint16((uint16_t*)pbyBayer, (uint16_t*)pbyRGB, ulWidth, ulHeight, first_color, ulBpp);
+			dc1394_bayer_decoding_16bit((uint16_t*)pbyBayer, (uint16_t*)pbyRGB, ulWidth, ulHeight, first_color, method, ulBpp);
 			break;
 	}
 
@@ -458,6 +221,5 @@ main( int argc, char ** argv )
     munmap(pbyRGB,ulOutSize);
     close(output_fd);
 
-    fprintf(stderr, "***Here: %s:%d\n",__FILE__,__LINE__);
     return 0;
 }

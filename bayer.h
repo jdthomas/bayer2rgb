@@ -71,3 +71,11 @@ typedef enum {
 #define DC1394_ERROR_MAX  DC1394_SUCCESS
 #define DC1394_ERROR_NUM (DC1394_ERROR_MAX-DC1394_ERROR_MIN+1)
 
+
+
+
+dc1394error_t
+dc1394_bayer_decoding_8bit(const uint8_t * bayer, uint8_t * rgb, uint32_t sx, uint32_t sy, dc1394color_filter_t tile, dc1394bayer_method_t method);
+
+dc1394error_t
+dc1394_bayer_decoding_16bit(const uint16_t * bayer, uint16_t * rgb, uint32_t sx, uint32_t sy, dc1394color_filter_t tile, dc1394bayer_method_t method, uint32_t bits);

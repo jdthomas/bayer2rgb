@@ -1,11 +1,21 @@
 
-all: Bayer2RGB
+ifdef DEBUG
+  CFLAGS += -ggdb -Wall -DDEBUG
+else
+  CFLAGS += -O3 -Wall
+endif
+
+
+all: bayer2rgb
 	
-Bayer2RGB: Bayer2RGB.c bayer.o
-	gcc -g -o Bayer2RGB bayer.o Bayer2RGB.c -lm
+bayer2rgb: bayer2rgb.c bayer.o
+	$(CC) $(CFLAGS) -o bayer2rgb bayer.o bayer2rgb.c -lm
+ifdef RELEASE
+	strip bayer2rgb
+endif
 
 bayer.o:bayer.c
-	gcc -g -c bayer.c
+	$(CC) $(CFLAGS) -c bayer.c
 
 clean:
-	-rm Bayer2RGB bayer.o *\~ 
+	-rm bayer2rgb bayer.o *\~ 

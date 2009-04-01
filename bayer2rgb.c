@@ -98,10 +98,10 @@ usage( char * name )
 int
 main( int argc, char ** argv )
 {
-    uint32_t ulInSize, ulOutSize, ulWidth, ulHeight, ulBpp;
+    uint32_t ulInSize=0, ulOutSize=0, ulWidth=0, ulHeight=0, ulBpp=0;
     int first_color = DC1394_COLOR_FILTER_RGGB;
 	int method = DC1394_BAYER_METHOD_BILINEAR;
-    char *infile, *outfile;
+    char *infile=NULL, *outfile=NULL;
     int input_fd = 0;
     int output_fd = 0;
     void * pbyBayer = NULL;
@@ -165,14 +165,14 @@ main( int argc, char ** argv )
     }
 
     input_fd = open(infile, O_RDONLY);
-    if(input_fd <= 0)
+    if(input_fd < 0)
     {
         printf("Problem opening input: %s\n", infile);
         return 1;
     }
 
     output_fd = open(outfile, O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH );
-    if(output_fd <= 0)
+    if(output_fd < 0)
     {
         printf("Problem opening output: %s\n", outfile);
         return 1;
@@ -185,13 +185,13 @@ main( int argc, char ** argv )
     ulOutSize = ulWidth * ulHeight * (8 / ulBpp) * 3;
     ftruncate(output_fd, ulOutSize );
 
-    pbyBayer = mmap(NULL, ulInSize, PROT_READ,  MAP_SHARED|MAP_POPULATE, input_fd, 0);
+    pbyBayer = mmap(NULL, ulInSize, PROT_READ, MAP_SHARED | MAP_POPULATE, input_fd, 0);
     if( pbyBayer == MAP_FAILED )
     {
         perror("Faild mmaping input");
         return 1;
     }
-    pbyRGB = mmap(NULL, ulOutSize, PROT_READ | PROT_WRITE, MAP_SHARED|MAP_POPULATE, output_fd, 0);
+    pbyRGB = mmap(NULL, ulOutSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, output_fd, 0);
     if( pbyRGB == MAP_FAILED )
     {
         perror("Faild mmaping output");
@@ -199,26 +199,46 @@ main( int argc, char ** argv )
     }
     printf("%p -> %p\n", pbyBayer, pbyRGB);
 
-    printf("%s: %s(%d) %s(%d) %d %d %d\n", argv[0], infile, ulInSize, outfile, ulOutSize, ulWidth, ulHeight, ulBpp );
+    printf("%s: %s(%d) %s(%d) %d %d %d, %d %d\n", argv[0], infile, ulInSize, outfile, ulOutSize, ulWidth, ulHeight, ulBpp, first_color, method );
 
     //memset(pbyRGB, 0xff, ulOutSize);//return 1;
 
+#if 1
 	switch(ulBpp)
 	{
 		case 8:
-			dc1394_bayer_decoding_8bit((uint8_t*)pbyBayer, (uint8_t*)pbyRGB, ulWidth, ulHeight, first_color, method);
+			dc1394_bayer_decoding_8bit((const uint8_t*)pbyBayer, (uint8_t*)pbyRGB, ulWidth, ulHeight, first_color, method);
 			break;
 		case 16:
 		default:
-			dc1394_bayer_decoding_16bit((uint16_t*)pbyBayer, (uint16_t*)pbyRGB, ulWidth, ulHeight, first_color, method, ulBpp);
+			dc1394_bayer_decoding_16bit((const uint16_t*)pbyBayer, (uint16_t*)pbyRGB, ulWidth, ulHeight, first_color, method, ulBpp);
 			break;
 	}
+#endif
+
+#if 0
+	printf("Last few In: %x %x %x %x\n", 
+			((uint32_t*)pbyBayer)[0],
+			((uint32_t*)pbyBayer)[1],
+			((uint32_t*)pbyBayer)[2],
+			((uint32_t*)pbyBayer)[3]);
+
+//			((int*)pbyRGB)[2] = 0xadadadad;
+	printf("Last few Out: %x %x %x %x\n", 
+			((uint32_t*)pbyRGB)[0],
+			((uint32_t*)pbyRGB)[1],
+			((uint32_t*)pbyRGB)[2],
+			((uint32_t*)pbyRGB)[3]);
+#endif
 
     munmap(pbyBayer,ulInSize);
     close(input_fd);
 
-    msync(pbyRGB,ulOutSize,MS_INVALIDATE|MS_SYNC);
+    if( msync(pbyRGB, ulOutSize, MS_INVALIDATE|MS_SYNC) != 0 )
+		perror("Problem msyncing");
     munmap(pbyRGB,ulOutSize);
+    if( fsync(output_fd) != 0 )
+		perror("Problem fsyncing");
     close(output_fd);
 
     return 0;

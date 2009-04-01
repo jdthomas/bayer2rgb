@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE delegatemap [
+<!ELEMENT delegatemap (delegate)+>
+<!ELEMENT delegate (#PCDATA)>
+<!ATTLIST delegate decode CDATA #IMPLIED>
+<!ATTLIST delegate encode CDATA #IMPLIED>
+<!ATTLIST delegate mode CDATA #IMPLIED>
+<!ATTLIST delegate spawn CDATA #IMPLIED>
+<!ATTLIST delegate stealth CDATA #IMPLIED>
+<!ATTLIST delegate command CDATA #REQUIRED>
+]>
+<!--
+  Delegate command file.
+
+  Commands which specify
+
+    decode="in_format" encode="out_format"
+
+  specify the rules for converting from in_format to out_format These
+  rules may be used to translate directly between formats.
+
+  Commands which specify only
+
+    decode="in_format"
+
+  specify the rules for converting from in_format to some format that
+  ImageMagick will automatically recognize. These rules are used to
+  decode formats.
+
+  Commands which specify only
+
+   encode="out_format"
+
+  specify the rules for an "encoder" which may accept any input format.
+
+  For delegates other than ps:*, pcl:*, and mpeg:* the substitution rules are
+  as follows:
+
+    %i  input image filename
+    %o  output image filename
+    %u  unique temporary filename
+    %z  secondary unique temporary filename
+    %#  input image signature
+    %b  image file size
+    %c  input image comment
+    %g  image geometry
+    %h  image rows (height)
+    %k  input image number colors
+    %m  input image format
+    %p  page number
+    %q  input image depth
+    %s  scene number
+    %w  image columns (width)
+    %x  input image x resolution
+    %y  input image y resolution
+
+-->
+<delegatemap>
+	<delegate decode="bayer" encode="rgb" mode="decode" command="bayer2rgb -i &quot;%i&quot; -o &quot;%o&quot; -w %w -v %h -b %q -m SIMPLE" />
+</delegatemap>

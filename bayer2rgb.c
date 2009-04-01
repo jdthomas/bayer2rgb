@@ -201,16 +201,16 @@ main( int argc, char ** argv )
     lseek(input_fd, 0, 0);
 
     //ulOutSize = ulWidth * ulHeight * ulBpp * 3;
-    ulOutSize = ulWidth * ulHeight * (8 / ulBpp) * 3;
+    ulOutSize = ulWidth * ulHeight * (ulBpp / 8) * 3;
     ftruncate(output_fd, ulOutSize );
 
-    pbyBayer = mmap(NULL, ulInSize, PROT_READ, MAP_SHARED | MAP_POPULATE, input_fd, 0);
+    pbyBayer = mmap(NULL, ulInSize, PROT_READ, MAP_SHARED /*| MAP_POPULATE*/, input_fd, 0);
     if( pbyBayer == MAP_FAILED )
     {
         perror("Faild mmaping input");
         return 1;
     }
-    pbyRGB = mmap(NULL, ulOutSize, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, output_fd, 0);
+    pbyRGB = mmap(NULL, ulOutSize, PROT_READ | PROT_WRITE, MAP_SHARED /*| MAP_POPULATE*/, output_fd, 0);
     if( pbyRGB == MAP_FAILED )
     {
         perror("Faild mmaping output");

@@ -1,0 +1,42 @@
+I borrowed the bayer.c from the libdc1394 project [1], it is licensed under LGPL.
+
+This is an implementation of the idea I stumbled upon on ImageMagick's mailing list while searching for a bayer grid converter. The thread can be found at [2].The interpolation alogrithms used are described at [3].
+
+
+Installation
+------------
+
+    make
+    cp bayer2rgb /usr/bin/
+
+
+Running
+-------
+
+    usage: ./bayer2rgb
+       --input,-i     input file
+       --output,-o    output file
+       --width,-w     image width (pixels)
+       --height,-v    image height (pixels)
+       --bpp,-b       bits per pixel
+       --first,-f     first pixel color: RGGB, GBRG, GRBG, BGGR
+       --method,-m    interpolation method: NEAREST, SIMPLE, BILINEAR, HQLINEAR, DOWNSAMPLE, EDGESENSE, VNG, AHD
+       --help,-h      this helpful message.
+
+
+Links
+-----
+
+[1] http://sourceforge.net/projects/libdc1394
+[2] http://www.imagemagick.org/pipermail/magick-developers/2008-May/002953.html
+[3] http://scien.stanford.edu/class/psych221/projects/99/tingchen/main.htm
+
+
+ImageMagick Integration
+-----------------------
+
+A delegates.xml file is included, however, I haven't gotten it to work. The delegate shows up in `convert -list delegate` but fails to run. From some initial research it seems that it may require a newer version of ImageMagick than I have installed, YMMV.
+
+Questions: 
+    1. how can I make the delegate.xml work
+    2. How would I pass custom parameters (interpolation method and more importantly first color).

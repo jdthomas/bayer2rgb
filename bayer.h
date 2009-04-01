@@ -1,3 +1,4 @@
+#include <stdint.h>
 
 typedef enum {
     DC1394_BAYER_METHOD_NEAREST=0,
@@ -70,6 +71,11 @@ typedef enum {
 #define DC1394_ERROR_MIN  DC1394_BASLER_UNKNOWN_SFF_CHUNK
 #define DC1394_ERROR_MAX  DC1394_SUCCESS
 #define DC1394_ERROR_NUM (DC1394_ERROR_MAX-DC1394_ERROR_MIN+1)
+
+typedef enum {
+    DC1394_FALSE= 0,
+    DC1394_TRUE
+} dc1394bool_t;
 
 
 

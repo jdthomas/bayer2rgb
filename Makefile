@@ -1,3 +1,5 @@
+CC=gcc
+#CFLAGS=-std=c99
 
 ifdef DEBUG
   CFLAGS += -ggdb -Wall -DDEBUG
@@ -14,8 +16,8 @@ ifdef RELEASE
 	strip bayer2rgb
 endif
 
-bayer.o:bayer.c
-	$(CC) $(CFLAGS) -c bayer.c
+bayer.o: bayer.c
+	$(CC) $(CFLAGS) -std=c99 -c bayer.c
 
 clean:
 	-rm bayer2rgb bayer.o *\~ 

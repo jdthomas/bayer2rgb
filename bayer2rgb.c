@@ -1,3 +1,24 @@
+/**
+ * bayer2rgb: Comandline converter for bayer grid to rgb images.
+ * This file is part of bayer2rgb.
+ *
+ * Copyright (c) 2009 Jeff Thomas
+ *
+ * bayer2rgb is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * bayer2rgb is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ **/
+
 #include <fcntl.h>
 #include <getopt.h>
 #include <stdint.h>
@@ -58,7 +79,7 @@ getMethod(char* m)
 	if( strcmp(m, "AHD") == 0 )
 		return DC1394_BAYER_METHOD_AHD;
 
-	printf("WARNING: Unrecognized method, defaulting to BILINEAR\n");
+	printf("WARNING: Unrecognized method \"%s\", defaulting to BILINEAR\n", m);
 	return DC1394_BAYER_METHOD_BILINEAR;
 }
 
@@ -66,8 +87,6 @@ getMethod(char* m)
 dc1394color_filter_t
 getFirstColor(char *f)
 {
-	if( strlen(f) < 2 )
-		goto fc_unrec;
 	if( strcmp(f, "RGGB") == 0 )
 		return DC1394_COLOR_FILTER_RGGB;
 	if( strcmp(f, "GBRG") == 0 )
@@ -76,8 +95,8 @@ getFirstColor(char *f)
 		return DC1394_COLOR_FILTER_GRBG;
 	if( strcmp(f, "BGGR") == 0 )
 		return DC1394_COLOR_FILTER_BGGR;
-fc_unrec:
-	printf("WARNING: Unrecognized first color, defaulting to RGGB\n");
+
+	printf("WARNING: Unrecognized first color \"%s\", defaulting to RGGB\n", f);
 	return DC1394_COLOR_FILTER_RGGB;
 }
 

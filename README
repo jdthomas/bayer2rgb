@@ -32,6 +32,7 @@ Running
        --first,-f     first pixel color: RGGB, GBRG, GRBG, BGGR
        --method,-m    interpolation method: NEAREST, SIMPLE, BILINEAR, HQLINEAR, DOWNSAMPLE, EDGESENSE, VNG, AHD
        --tiff,-t      add a tiff header
+       --swap,-s      if bpp == 16, swap byte order before conversion.
        --help,-h      this helpful message.
 
 

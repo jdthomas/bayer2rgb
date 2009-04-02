@@ -171,6 +171,7 @@ usage( char * name )
 	printf("   --first,-f     first pixel color: RGGB, GBRG, GRBG, BGGR\n");
 	printf("   --method,-m    interpolation method: NEAREST, SIMPLE, BILINEAR, HQLINEAR, DOWNSAMPLE, EDGESENSE, VNG, AHD\n");
 	printf("   --tiff,-t      add a tiff header\n");
+	printf("   --swap,-s      if bpp == 16, swap byte order before conversion.\n");
 	printf("   --help,-h      this helpful message.\n");
 }
 
@@ -188,6 +189,7 @@ main( int argc, char ** argv )
     void * pbyRGB = NULL, *pbyRGB_start = NULL;
     char c;
     int optidx = 0;
+    int swap = 0;
 
     struct option longopt[] = {
         {"input",1,NULL,'i'},
@@ -199,10 +201,11 @@ main( int argc, char ** argv )
         {"first",1,NULL,'f'},
         {"method",1,NULL,'m'},
         {"tiff",0,NULL,'t'},
+        {"swap",0,NULL,'s'},
         {0,0,0,0}
     };
 
-    while ((c=getopt_long(argc,argv,"i:o:w:v:b:f:m:th",longopt,&optidx)) != -1)
+    while ((c=getopt_long(argc,argv,"i:o:w:v:b:f:m:ths",longopt,&optidx)) != -1)
     {
         switch ( c )
         {
@@ -227,6 +230,9 @@ main( int argc, char ** argv )
             case 'm':
 				method = getMethod( optarg );
                 break;
+			case 's':
+				swap = 1;
+				break;
 			case 't':
 				tiff = TIFF_HDR_SIZE;
 				break;
@@ -269,7 +275,7 @@ main( int argc, char ** argv )
     ulOutSize = ulWidth * ulHeight * (ulBpp / 8) * 3 + tiff;
     ftruncate(output_fd, ulOutSize );
 
-    pbyBayer = mmap(NULL, ulInSize, PROT_READ, MAP_SHARED /*| MAP_POPULATE*/, input_fd, 0);
+    pbyBayer = mmap(NULL, ulInSize, PROT_READ | PROT_WRITE, MAP_PRIVATE /*| MAP_POPULATE*/, input_fd, 0);
     if( pbyBayer == MAP_FAILED )
     {
         perror("Faild mmaping input");
@@ -299,6 +305,15 @@ main( int argc, char ** argv )
 			break;
 		case 16:
 		default:
+            {
+                uint8_t tmp=0;
+                uint32_t i=0;
+                for(i=0;i<ulInSize;i+=2){
+                    tmp = *(((uint8_t*)pbyBayer)+i);
+                    *(((uint8_t*)pbyBayer)+i) = *(((uint8_t*)pbyBayer)+i+1);
+                    *(((uint8_t*)pbyBayer)+i+1) = tmp;
+                }
+            }
 			dc1394_bayer_decoding_16bit((const uint16_t*)pbyBayer, (uint16_t*)pbyRGB_start, ulWidth, ulHeight, first_color, method, ulBpp);
 			break;
 	}

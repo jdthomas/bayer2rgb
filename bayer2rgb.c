@@ -57,6 +57,65 @@
  *  ./Bayer2RGB -i %i -o %o -w %x -h %y -b %q
  */
 
+// tiff types: short = 3, int = 4
+// Tags: ( 2-byte tag ) ( 2-byte type ) ( 4-byte count ) ( 4-byte data )
+//    0100 0003 0000 0001 0064 0000
+//       |        |    |         |
+// tag --+        |    |         |
+// short int -----+    |         |
+// one value ----------+         |
+// value of 100 -----------------+
+//
+#define TIFF_HDR_NUM_ENTRY 8
+#define TIFF_HDR_SIZE 10+TIFF_HDR_NUM_ENTRY*12 
+uint8_t tiff_header[TIFF_HDR_SIZE] = {
+	// I     I     42    
+	  0x49, 0x49, 0x2a, 0x00,
+	// ( offset to tags, 0 )  
+	  0x08, 0x00, 0x00, 0x00, 
+	// ( num tags )  
+	  0x08, 0x00, 
+	// ( newsubfiletype, 0 full-image )
+	  0xfe, 0x00, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	// ( image width )
+	  0x00, 0x01, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+	// ( image height )
+	  0x01, 0x01, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	// ( bits per sample )
+	  0x02, 0x01, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+	// ( Photometric Interpretation, 2 = RGB )
+	  0x06, 0x01, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x02, 0x00, 0x00, 0x00, 
+	// ( Strip offsets, 8 )
+	  0x11, 0x01, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x08, 0x00, 0x00, 0x00, 
+	// ( samples per pixel, 3 - RGB)
+	  0x15, 0x01, 0x03, 0x00, 0x01, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00, 0x00,
+	// ( Strip byte count )
+	  0x17, 0x01, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
+};
+uint8_t * 
+put_tiff(uint8_t * pbyRGB, uint32_t ulWidth, uint32_t ulHeight, uint16_t ulBpp)
+{
+	uint32_t ulTemp=0;
+	uint16_t sTemp=0;
+	memcpy(pbyRGB, tiff_header, TIFF_HDR_SIZE);
+
+	sTemp = TIFF_HDR_NUM_ENTRY;
+	memcpy(pbyRGB + 8, &sTemp, 2);
+
+	memcpy(pbyRGB + 10 + 1*12 + 8, &ulWidth, 4);
+	memcpy(pbyRGB + 10 + 2*12 + 8, &ulHeight, 4);
+	memcpy(pbyRGB + 10 + 3*12 + 8, &ulBpp, 2);
+
+	// strip byte count
+	ulTemp = ulWidth * ulHeight * (ulBpp / 8) * 3;
+	memcpy(pbyRGB + 10 + 7*12 + 8, &ulTemp, 4);
+
+	//strip offset
+	sTemp = TIFF_HDR_SIZE;
+	memcpy(pbyRGB + 10 + 5*12 + 8, &sTemp, 2);
+
+	return pbyRGB + TIFF_HDR_SIZE;
+};
 
 
 dc1394bayer_method_t
@@ -111,6 +170,7 @@ usage( char * name )
 	printf("   --bpp,-b       bits per pixel\n");
 	printf("   --first,-f     first pixel color: RGGB, GBRG, GRBG, BGGR\n");
 	printf("   --method,-m    interpolation method: NEAREST, SIMPLE, BILINEAR, HQLINEAR, DOWNSAMPLE, EDGESENSE, VNG, AHD\n");
+	printf("   --tiff,-t      add a tiff header\n");
 	printf("   --help,-h      this helpful message.\n");
 }
 
@@ -119,12 +179,13 @@ main( int argc, char ** argv )
 {
     uint32_t ulInSize=0, ulOutSize=0, ulWidth=0, ulHeight=0, ulBpp=0;
     int first_color = DC1394_COLOR_FILTER_RGGB;
+	int tiff = 0;
 	int method = DC1394_BAYER_METHOD_BILINEAR;
     char *infile=NULL, *outfile=NULL;
     int input_fd = 0;
     int output_fd = 0;
     void * pbyBayer = NULL;
-    void * pbyRGB = NULL;
+    void * pbyRGB = NULL, *pbyRGB_start = NULL;
     char c;
     int optidx = 0;
 
@@ -137,10 +198,11 @@ main( int argc, char ** argv )
         {"bpp",1,NULL,'b'},
         {"first",1,NULL,'f'},
         {"method",1,NULL,'m'},
+        {"tiff",0,NULL,'t'},
         {0,0,0,0}
     };
 
-    while ((c=getopt_long(argc,argv,"i:o:w:v:b:f:m:h",longopt,&optidx)) != -1)
+    while ((c=getopt_long(argc,argv,"i:o:w:v:b:f:m:th",longopt,&optidx)) != -1)
     {
         switch ( c )
         {
@@ -165,6 +227,9 @@ main( int argc, char ** argv )
             case 'm':
 				method = getMethod( optarg );
                 break;
+			case 't':
+				tiff = TIFF_HDR_SIZE;
+				break;
 			case 'h':
 				usage(argv[0]);
 				return 0;
@@ -201,7 +266,7 @@ main( int argc, char ** argv )
     lseek(input_fd, 0, 0);
 
     //ulOutSize = ulWidth * ulHeight * ulBpp * 3;
-    ulOutSize = ulWidth * ulHeight * (ulBpp / 8) * 3;
+    ulOutSize = ulWidth * ulHeight * (ulBpp / 8) * 3 + tiff;
     ftruncate(output_fd, ulOutSize );
 
     pbyBayer = mmap(NULL, ulInSize, PROT_READ, MAP_SHARED /*| MAP_POPULATE*/, input_fd, 0);
@@ -210,7 +275,7 @@ main( int argc, char ** argv )
         perror("Faild mmaping input");
         return 1;
     }
-    pbyRGB = mmap(NULL, ulOutSize, PROT_READ | PROT_WRITE, MAP_SHARED /*| MAP_POPULATE*/, output_fd, 0);
+    pbyRGB_start = pbyRGB = mmap(NULL, ulOutSize, PROT_READ | PROT_WRITE, MAP_SHARED /*| MAP_POPULATE*/, output_fd, 0);
     if( pbyRGB == MAP_FAILED )
     {
         perror("Faild mmaping output");
@@ -222,15 +287,19 @@ main( int argc, char ** argv )
 
     //memset(pbyRGB, 0xff, ulOutSize);//return 1;
 
+	if(tiff)
+	{
+		pbyRGB_start = put_tiff(pbyRGB, ulWidth, ulHeight, ulBpp);
+	}
 #if 1
 	switch(ulBpp)
 	{
 		case 8:
-			dc1394_bayer_decoding_8bit((const uint8_t*)pbyBayer, (uint8_t*)pbyRGB, ulWidth, ulHeight, first_color, method);
+			dc1394_bayer_decoding_8bit((const uint8_t*)pbyBayer, (uint8_t*)pbyRGB_start, ulWidth, ulHeight, first_color, method);
 			break;
 		case 16:
 		default:
-			dc1394_bayer_decoding_16bit((const uint16_t*)pbyBayer, (uint16_t*)pbyRGB, ulWidth, ulHeight, first_color, method, ulBpp);
+			dc1394_bayer_decoding_16bit((const uint16_t*)pbyBayer, (uint16_t*)pbyRGB_start, ulWidth, ulHeight, first_color, method, ulBpp);
 			break;
 	}
 #endif

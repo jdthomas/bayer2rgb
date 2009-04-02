@@ -1,6 +1,15 @@
+bayer2rgb
+=========
+
+bayer2rgb will convert naked (no header) bayer grid data into rgb data. There are several choices of interpolation (though they all look essentially the same to my eye). It can output tiff files, and can integrate with ImageMagick to output other formats. 
+
 I borrowed the bayer.c from the libdc1394 project [1], it is licensed under LGPL.
 
-This is an implementation of the idea I stumbled upon on ImageMagick's mailing list while searching for a bayer grid converter. The thread can be found at [2].The interpolation alogrithms used are described at [3].
+This is an implementation of the idea I stumbled upon on ImageMagick's mailing list while searching for a bayer grid converter. The thread can be found at [2].The interpolation algorithms used are described at [3].
+
+I have tested it both on Linux and in under Cygwin on WinXP.
+
+Right now it is pretty naive about byte ordering, hopefully this will get fixed at some point.
 
 
 Installation
@@ -8,6 +17,7 @@ Installation
 
     make
     cp bayer2rgb /usr/bin/
+    cp delegates.xml ~/.magick/delegates.xml
 
 
 Running
@@ -21,6 +31,7 @@ Running
        --bpp,-b       bits per pixel
        --first,-f     first pixel color: RGGB, GBRG, GRBG, BGGR
        --method,-m    interpolation method: NEAREST, SIMPLE, BILINEAR, HQLINEAR, DOWNSAMPLE, EDGESENSE, VNG, AHD
+       --tiff,-t      add a tiff header
        --help,-h      this helpful message.
 
 
@@ -35,8 +46,9 @@ Links
 ImageMagick Integration
 -----------------------
 
-A delegates.xml file is included, however, I haven't gotten it to work. The delegate shows up in `convert -list delegate` but fails to run. From some initial research it seems that it may require a newer version of ImageMagick than I have installed, YMMV.
+A delegates.xml file is included. Add the entries from it to your delegates.xml and you should be able to do:
 
-Questions: 
-    1. how can I make the delegate.xml work
-    2. How would I pass custom parameters (interpolation method and more importantly first color).
+convert -size 1328x498 -depth 8 RGGB_BAYER:./tests/SV0030.RAW ./SV0030.jpg
+
+Of course if you just need to get a look at the image it is much faster to simply use this program directly (probably with the -t flag).
+

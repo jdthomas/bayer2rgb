@@ -56,5 +56,9 @@
 
 -->
 <delegatemap>
-	<delegate decode="bayer" encode="rgb" mode="decode" command="bayer2rgb -i &quot;%i&quot; -o &quot;%o&quot; -w %w -v %h -b %q -m SIMPLE" />
+	<delegate decode="rggb_bayer" command="bayer2rgb -i &quot;%i&quot; -o &quot;%o&quot; -w %w -v %h -b %q -t -m BILINEAR -f RGGB" />
+	<delegate decode="gbrg_bayer" command="bayer2rgb -i &quot;%i&quot; -o &quot;%o&quot; -w %w -v %h -b %q -t -m BILINEAR -f GBRG" />
+	<delegate decode="grbg_bayer" command="bayer2rgb -i &quot;%i&quot; -o &quot;%o&quot; -w %w -v %h -b %q -t -m BILINEAR -f GRBG" />
+	<delegate decode="bggr_bayer" command="bayer2rgb -i &quot;%i&quot; -o &quot;%o&quot; -w %w -v %h -b %q -t -m BILINEAR -f BGGR" />
+
 </delegatemap>

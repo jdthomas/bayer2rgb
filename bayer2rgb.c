@@ -32,31 +32,6 @@
 
 #include "bayer.h"
 
-/**
- *
- * Attributes that can be passed by ImageMagick
- *
- *  %i  input image filename
- *  %o  output image filename
- *  %u  unique temporary filename
- *  %z  secondary unique temporary filename
- *  %#  input image signature
- *  %b  image file size
- *  %c  input image comment
- *  %g  image geometry
- *  %h  image rows (height)
- *  %k  input image number colors
- *  %m  input image format
- *  %p  page number
- *  %q  input image depth
- *  %s  scene number
- *  %w  image columns (width)
- *  %x  input image x resolution
- *  %y  input image y resolution
- *
- *  ./Bayer2RGB -i %i -o %o -w %x -h %y -b %q
- */
-
 // tiff types: short = 3, int = 4
 // Tags: ( 2-byte tag ) ( 2-byte type ) ( 4-byte count ) ( 4-byte data )
 //    0100 0003 0000 0001 0064 0000
@@ -93,28 +68,28 @@ uint8_t tiff_header[TIFF_HDR_SIZE] = {
 	  0x17, 0x01, 0x04, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 };
 uint8_t * 
-put_tiff(uint8_t * pbyRGB, uint32_t ulWidth, uint32_t ulHeight, uint16_t ulBpp)
+put_tiff(uint8_t * rgb, uint32_t width, uint32_t height, uint16_t bpp)
 {
 	uint32_t ulTemp=0;
 	uint16_t sTemp=0;
-	memcpy(pbyRGB, tiff_header, TIFF_HDR_SIZE);
+	memcpy(rgb, tiff_header, TIFF_HDR_SIZE);
 
 	sTemp = TIFF_HDR_NUM_ENTRY;
-	memcpy(pbyRGB + 8, &sTemp, 2);
+	memcpy(rgb + 8, &sTemp, 2);
 
-	memcpy(pbyRGB + 10 + 1*12 + 8, &ulWidth, 4);
-	memcpy(pbyRGB + 10 + 2*12 + 8, &ulHeight, 4);
-	memcpy(pbyRGB + 10 + 3*12 + 8, &ulBpp, 2);
+	memcpy(rgb + 10 + 1*12 + 8, &width, 4);
+	memcpy(rgb + 10 + 2*12 + 8, &height, 4);
+	memcpy(rgb + 10 + 3*12 + 8, &bpp, 2);
 
 	// strip byte count
-	ulTemp = ulWidth * ulHeight * (ulBpp / 8) * 3;
-	memcpy(pbyRGB + 10 + 7*12 + 8, &ulTemp, 4);
+	ulTemp = width * height * (bpp / 8) * 3;
+	memcpy(rgb + 10 + 7*12 + 8, &ulTemp, 4);
 
 	//strip offset
 	sTemp = TIFF_HDR_SIZE;
-	memcpy(pbyRGB + 10 + 5*12 + 8, &sTemp, 2);
+	memcpy(rgb + 10 + 5*12 + 8, &sTemp, 2);
 
-	return pbyRGB + TIFF_HDR_SIZE;
+	return rgb + TIFF_HDR_SIZE;
 };
 
 
@@ -171,22 +146,22 @@ usage( char * name )
 	printf("   --first,-f     first pixel color: RGGB, GBRG, GRBG, BGGR\n");
 	printf("   --method,-m    interpolation method: NEAREST, SIMPLE, BILINEAR, HQLINEAR, DOWNSAMPLE, EDGESENSE, VNG, AHD\n");
 	printf("   --tiff,-t      add a tiff header\n");
-	printf("   --swap,-s      if bpp == 16, swap byte order before conversion.\n");
-	printf("   --help,-h      this helpful message.\n");
+	printf("   --swap,-s      if bpp == 16, swap byte order before conversion\n");
+	printf("   --help,-h      this helpful message\n");
 }
 
 int
 main( int argc, char ** argv )
 {
-    uint32_t ulInSize=0, ulOutSize=0, ulWidth=0, ulHeight=0, ulBpp=0;
+    uint32_t in_size=0, out_size=0, width=0, height=0, bpp=0;
     int first_color = DC1394_COLOR_FILTER_RGGB;
 	int tiff = 0;
 	int method = DC1394_BAYER_METHOD_BILINEAR;
     char *infile=NULL, *outfile=NULL;
     int input_fd = 0;
     int output_fd = 0;
-    void * pbyBayer = NULL;
-    void * pbyRGB = NULL, *pbyRGB_start = NULL;
+    void * bayer = NULL;
+    void * rgb = NULL, *rgb_start = NULL;
     char c;
     int optidx = 0;
     int swap = 0;
@@ -216,13 +191,13 @@ main( int argc, char ** argv )
                 outfile = strdup( optarg );
                 break;
             case 'w':
-                ulWidth = strtol( optarg, NULL, 10 );
+                width = strtol( optarg, NULL, 10 );
                 break;
             case 'v':
-                ulHeight = strtol( optarg, NULL, 10 );
+                height = strtol( optarg, NULL, 10 );
                 break;
             case 'b':
-                ulBpp = strtol( optarg, NULL, 10 );
+                bpp = strtol( optarg, NULL, 10 );
                 break;
             case 'f':
                 first_color = getFirstColor( optarg );
@@ -247,7 +222,7 @@ main( int argc, char ** argv )
         }
     }
     // arguments: infile outfile width height bpp first_color
-    if( infile == NULL || outfile == NULL || ulBpp == 0 || ulWidth == 0 || ulHeight == 0 )
+    if( infile == NULL || outfile == NULL || bpp == 0 || width == 0 || height == 0 )
     {
         printf("Bad parameter\n");
 		usage(argv[0]);
@@ -268,78 +243,80 @@ main( int argc, char ** argv )
         return 1;
     }
 
-    ulInSize = lseek(input_fd, 0, SEEK_END );
+    in_size = lseek(input_fd, 0, SEEK_END );
     lseek(input_fd, 0, 0);
 
-    //ulOutSize = ulWidth * ulHeight * ulBpp * 3;
-    ulOutSize = ulWidth * ulHeight * (ulBpp / 8) * 3 + tiff;
-    ftruncate(output_fd, ulOutSize );
+    out_size = width * height * (bpp / 8) * 3 + tiff;
 
-    pbyBayer = mmap(NULL, ulInSize, PROT_READ | PROT_WRITE, MAP_PRIVATE /*| MAP_POPULATE*/, input_fd, 0);
-    if( pbyBayer == MAP_FAILED )
+    ftruncate(output_fd, out_size );
+
+    bayer = mmap(NULL, in_size, PROT_READ | PROT_WRITE, MAP_PRIVATE /*| MAP_POPULATE*/, input_fd, 0);
+    if( bayer == MAP_FAILED )
     {
         perror("Faild mmaping input");
         return 1;
     }
-    pbyRGB_start = pbyRGB = mmap(NULL, ulOutSize, PROT_READ | PROT_WRITE, MAP_SHARED /*| MAP_POPULATE*/, output_fd, 0);
-    if( pbyRGB == MAP_FAILED )
+    rgb_start = rgb = mmap(NULL, out_size, PROT_READ | PROT_WRITE, MAP_SHARED /*| MAP_POPULATE*/, output_fd, 0);
+    if( rgb == MAP_FAILED )
     {
         perror("Faild mmaping output");
         return 1;
     }
-    printf("%p -> %p\n", pbyBayer, pbyRGB);
+#ifdef DEBUG
+    printf("%p -> %p\n", bayer, rgb);
 
-    printf("%s: %s(%d) %s(%d) %d %d %d, %d %d\n", argv[0], infile, ulInSize, outfile, ulOutSize, ulWidth, ulHeight, ulBpp, first_color, method );
+    printf("%s: %s(%d) %s(%d) %d %d %d, %d %d\n", argv[0], infile, in_size, outfile, out_size, width, height, bpp, first_color, method );
 
-    //memset(pbyRGB, 0xff, ulOutSize);//return 1;
+    //memset(rgb, 0xff, out_size);//return 1;
+#endif
 
 	if(tiff)
 	{
-		pbyRGB_start = put_tiff(pbyRGB, ulWidth, ulHeight, ulBpp);
+		rgb_start = put_tiff(rgb, width, height, bpp);
 	}
 #if 1
-	switch(ulBpp)
+	switch(bpp)
 	{
 		case 8:
-			dc1394_bayer_decoding_8bit((const uint8_t*)pbyBayer, (uint8_t*)pbyRGB_start, ulWidth, ulHeight, first_color, method);
+			dc1394_bayer_decoding_8bit((const uint8_t*)bayer, (uint8_t*)rgb_start, width, height, first_color, method);
 			break;
 		case 16:
 		default:
             {
                 uint8_t tmp=0;
                 uint32_t i=0;
-                for(i=0;i<ulInSize;i+=2){
-                    tmp = *(((uint8_t*)pbyBayer)+i);
-                    *(((uint8_t*)pbyBayer)+i) = *(((uint8_t*)pbyBayer)+i+1);
-                    *(((uint8_t*)pbyBayer)+i+1) = tmp;
+                for(i=0;i<in_size;i+=2){
+                    tmp = *(((uint8_t*)bayer)+i);
+                    *(((uint8_t*)bayer)+i) = *(((uint8_t*)bayer)+i+1);
+                    *(((uint8_t*)bayer)+i+1) = tmp;
                 }
             }
-			dc1394_bayer_decoding_16bit((const uint16_t*)pbyBayer, (uint16_t*)pbyRGB_start, ulWidth, ulHeight, first_color, method, ulBpp);
+			dc1394_bayer_decoding_16bit((const uint16_t*)bayer, (uint16_t*)rgb_start, width, height, first_color, method, bpp);
 			break;
 	}
 #endif
 
-#if 0
+#if DEBUG
 	printf("Last few In: %x %x %x %x\n", 
-			((uint32_t*)pbyBayer)[0],
-			((uint32_t*)pbyBayer)[1],
-			((uint32_t*)pbyBayer)[2],
-			((uint32_t*)pbyBayer)[3]);
+			((uint32_t*)bayer)[0],
+			((uint32_t*)bayer)[1],
+			((uint32_t*)bayer)[2],
+			((uint32_t*)bayer)[3]);
 
-//			((int*)pbyRGB)[2] = 0xadadadad;
+//			((int*)rgb)[2] = 0xadadadad;
 	printf("Last few Out: %x %x %x %x\n", 
-			((uint32_t*)pbyRGB)[0],
-			((uint32_t*)pbyRGB)[1],
-			((uint32_t*)pbyRGB)[2],
-			((uint32_t*)pbyRGB)[3]);
+			((uint32_t*)rgb)[0],
+			((uint32_t*)rgb)[1],
+			((uint32_t*)rgb)[2],
+			((uint32_t*)rgb)[3]);
 #endif
 
-    munmap(pbyBayer,ulInSize);
+    munmap(bayer,in_size);
     close(input_fd);
 
-    if( msync(pbyRGB, ulOutSize, MS_INVALIDATE|MS_SYNC) != 0 )
+    if( msync(rgb, out_size, MS_INVALIDATE|MS_SYNC) != 0 )
 		perror("Problem msyncing");
-    munmap(pbyRGB,ulOutSize);
+    munmap(rgb,out_size);
     if( fsync(output_fd) != 0 )
 		perror("Problem fsyncing");
     close(output_fd);

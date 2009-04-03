@@ -9,8 +9,6 @@ This is an implementation of the idea I stumbled upon on ImageMagick's mailing l
 
 I have tested it both on Linux and in under Cygwin on WinXP.
 
-Right now it is pretty naive about byte ordering, hopefully this will get fixed at some point.
-
 
 Installation
 ------------
@@ -32,8 +30,8 @@ Running
        --first,-f     first pixel color: RGGB, GBRG, GRBG, BGGR
        --method,-m    interpolation method: NEAREST, SIMPLE, BILINEAR, HQLINEAR, DOWNSAMPLE, EDGESENSE, VNG, AHD
        --tiff,-t      add a tiff header
-       --swap,-s      if bpp == 16, swap byte order before conversion.
-       --help,-h      this helpful message.
+       --swap,-s      if bpp == 16, swap byte order before conversion
+       --help,-h      this helpful message
 
 
 Links
@@ -52,4 +50,5 @@ A delegates.xml file is included. Add the entries from it to your delegates.xml 
 convert -size 1328x498 -depth 8 RGGB_BAYER:./tests/SV0030.RAW ./SV0030.jpg
 
 Of course if you just need to get a look at the image it is much faster to simply use this program directly (probably with the -t flag).
+
 

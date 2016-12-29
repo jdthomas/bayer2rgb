@@ -282,7 +282,7 @@ main( int argc, char ** argv )
 			break;
 		case 16:
 		default:
-            {
+            if(swap){
                 uint8_t tmp=0;
                 uint32_t i=0;
                 for(i=0;i<in_size;i+=2){

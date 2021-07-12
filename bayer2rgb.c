@@ -162,7 +162,7 @@ main( int argc, char ** argv )
     int output_fd = 0;
     void * bayer = NULL;
     void * rgb = NULL, *rgb_start = NULL;
-    char c;
+    int c;
     int optidx = 0;
     int swap = 0;
 
@@ -182,7 +182,7 @@ main( int argc, char ** argv )
 
     while ((c=getopt_long(argc,argv,"i:o:w:v:b:f:m:ths",longopt,&optidx)) != -1)
     {
-        switch ( c )
+        switch ( (char)c )
         {
             case 'i':
                 infile = strdup( optarg );

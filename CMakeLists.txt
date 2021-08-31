@@ -14,3 +14,4 @@ target_link_libraries(${PROJECT_NAME} debayer)
 
 enable_testing()
 add_subdirectory(test)
+add_subdirectory(benchmark)

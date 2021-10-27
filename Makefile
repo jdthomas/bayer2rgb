@@ -10,14 +10,14 @@ endif
 
 all: bayer2rgb
 	
-bayer2rgb: bayer2rgb.c bayer.o
-	$(CC) $(CFLAGS) -o bayer2rgb bayer.o bayer2rgb.c -lm
+bayer2rgb: src/bayer2rgb.c bayer.o
+	$(CC) $(CFLAGS) -o bayer2rgb bayer.o src/bayer2rgb.c -lm
 ifdef RELEASE
 	strip bayer2rgb
 endif
 
-bayer.o: bayer.c
-	$(CC) $(CFLAGS) -std=c99 -c bayer.c
+bayer.o: src/bayer.c
+	$(CC) $(CFLAGS) -std=c99 -c src/bayer.c
 
 clean:
-	-rm bayer2rgb bayer.o *\~ 
+	-rm bayer2rgb bayer.o

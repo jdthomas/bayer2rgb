@@ -10,10 +10,20 @@ target_include_directories(${PROJECT_NAME}Tests
 
 message("Added include dir: ${PROJECT_SOURCE_DIR}/src")
 
-# TODO: Setup code coverage if enabled TODO: Setup sanitizers
-
 find_package(fmt REQUIRED)
 find_package(GTest REQUIRED)
+# include(FetchContent)
+# FetchContent_Declare(googletest
+#   GIT_REPOSITORY https://github.com/google/googletest.git
+#   GIT_TAG master
+#   )
+# FetchContent_MakeAvailable(googletest)
+#
+# FetchContent_Declare(fmt
+#   GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+#   GIT_TAG master
+#   )
+# FetchContent_MakeAvailable(fmt)
 find_package(Threads REQUIRED)
 
 target_link_libraries(

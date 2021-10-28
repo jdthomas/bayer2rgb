@@ -25,7 +25,6 @@
 #include <math.h>
 #include <stdlib.h>
 #include <string.h>
-//#include "conversions.h"
 #include "bayer.h"
 
 
@@ -102,7 +101,7 @@ ClearBorders_uint16(uint16_t * rgb, int sx, int sy, int w)
 /* insprired by OpenCV's Bayer decoding */
 
 dc1394error_t
-dc1394_bayer_NearestNeighbor(const uint8_t *restrict bayer, uint8_t *restrict rgb, int sx, int sy, int tile)
+dc1394_bayer_NearestNeighbor(const uint8_t * bayer, uint8_t * rgb, int sx, int sy, int tile)
 {
     const int bayerStep = sx;
     const int rgbStep = 3 * sx;
@@ -187,7 +186,7 @@ dc1394_bayer_NearestNeighbor(const uint8_t *restrict bayer, uint8_t *restrict rg
 
 /* OpenCV's Bayer decoding */
 dc1394error_t
-dc1394_bayer_Bilinear(const uint8_t *restrict bayer, uint8_t *restrict rgb, int sx, int sy, int tile)
+dc1394_bayer_Bilinear(const uint8_t * bayer, uint8_t * rgb, int sx, int sy, int tile)
 {
     const int bayerStep = sx;
     const int rgbStep = 3 * sx;
@@ -298,7 +297,7 @@ dc1394_bayer_Bilinear(const uint8_t *restrict bayer, uint8_t *restrict rgb, int 
    Bayer-Patterned Color Images, by Henrique S. Malvar, Li-wei He, and
    Ross Cutler, in ICASSP'04 */
 dc1394error_t
-dc1394_bayer_HQLinear(const uint8_t *restrict bayer, uint8_t *restrict rgb, int sx, int sy, int tile)
+dc1394_bayer_HQLinear(const uint8_t * bayer, uint8_t * rgb, int sx, int sy, int tile)
 {
     const int bayerStep = sx;
     const int rgbStep = 3 * sx;
@@ -500,7 +499,7 @@ dc1394_bayer_HQLinear(const uint8_t *restrict bayer, uint8_t *restrict rgb, int 
      interpolating a full color image utilizing chrominance gradients"
      U.S. Patent 5,373,322) */
 dc1394error_t
-dc1394_bayer_EdgeSense(const uint8_t *restrict bayer, uint8_t *restrict rgb, int sx, int sy, int tile)
+dc1394_bayer_EdgeSense(const uint8_t * bayer, uint8_t * rgb, int sx, int sy, int tile)
 {
     /* Removed due to patent concerns */
     return DC1394_FUNCTION_NOT_SUPPORTED;
@@ -508,10 +507,10 @@ dc1394_bayer_EdgeSense(const uint8_t *restrict bayer, uint8_t *restrict rgb, int
 
 /* coriander's Bayer decoding */
 dc1394error_t
-dc1394_bayer_Downsample(const uint8_t *restrict bayer, uint8_t *restrict rgb, int sx, int sy, int tile)
+dc1394_bayer_Downsample(const uint8_t * bayer, uint8_t * rgb, int sx, int sy, int tile)
 {
     uint8_t *outR, *outG, *outB;
-    register int i, j;
+    int i, j;
     int tmp;
 
     switch (tile) {
@@ -566,7 +565,7 @@ dc1394_bayer_Downsample(const uint8_t *restrict bayer, uint8_t *restrict rgb, in
 
 /* this is the method used inside AVT cameras. See AVT docs. */
 dc1394error_t
-dc1394_bayer_Simple(const uint8_t *restrict bayer, uint8_t *restrict rgb, int sx, int sy, int tile)
+dc1394_bayer_Simple(const uint8_t * bayer, uint8_t * rgb, int sx, int sy, int tile)
 {
     const int bayerStep = sx;
     const int rgbStep = 3 * sx;
@@ -653,7 +652,7 @@ dc1394_bayer_Simple(const uint8_t *restrict bayer, uint8_t *restrict rgb, int sx
 
 /* insprired by OpenCV's Bayer decoding */
 dc1394error_t
-dc1394_bayer_NearestNeighbor_uint16(const uint16_t *restrict bayer, uint16_t *restrict rgb, int sx, int sy, int tile, int bits)
+dc1394_bayer_NearestNeighbor_uint16(const uint16_t * bayer, uint16_t * rgb, int sx, int sy, int tile, int bits)
 {
     const int bayerStep = sx;
     const int rgbStep = 3 * sx;
@@ -738,7 +737,7 @@ dc1394_bayer_NearestNeighbor_uint16(const uint16_t *restrict bayer, uint16_t *re
 }
 /* OpenCV's Bayer decoding */
 dc1394error_t
-dc1394_bayer_Bilinear_uint16(const uint16_t *restrict bayer, uint16_t *restrict rgb, int sx, int sy, int tile, int bits)
+dc1394_bayer_Bilinear_uint16(const uint16_t * bayer, uint16_t * rgb, int sx, int sy, int tile, int bits)
 {
     const int bayerStep = sx;
     const int rgbStep = 3 * sx;
@@ -838,7 +837,7 @@ dc1394_bayer_Bilinear_uint16(const uint16_t *restrict bayer, uint16_t *restrict 
    Bayer-Patterned Color Images, by Henrique S. Malvar, Li-wei He, and
    Ross Cutler, in ICASSP'04 */
 dc1394error_t
-dc1394_bayer_HQLinear_uint16(const uint16_t *restrict bayer, uint16_t *restrict rgb, int sx, int sy, int tile, int bits)
+dc1394_bayer_HQLinear_uint16(const uint16_t * bayer, uint16_t * rgb, int sx, int sy, int tile, int bits)
 {
     const int bayerStep = sx;
     const int rgbStep = 3 * sx;
@@ -1048,7 +1047,7 @@ dc1394_bayer_HQLinear_uint16(const uint16_t *restrict bayer, uint16_t *restrict 
 
 /* coriander's Bayer decoding */
 dc1394error_t
-dc1394_bayer_EdgeSense_uint16(const uint16_t *restrict bayer, uint16_t *restrict rgb, int sx, int sy, int tile, int bits)
+dc1394_bayer_EdgeSense_uint16(const uint16_t * bayer, uint16_t * rgb, int sx, int sy, int tile, int bits)
 {
     /* Removed due to patent concerns */
     return DC1394_FUNCTION_NOT_SUPPORTED;
@@ -1056,10 +1055,10 @@ dc1394_bayer_EdgeSense_uint16(const uint16_t *restrict bayer, uint16_t *restrict
 
 /* coriander's Bayer decoding */
 dc1394error_t
-dc1394_bayer_Downsample_uint16(const uint16_t *restrict bayer, uint16_t *restrict rgb, int sx, int sy, int tile, int bits)
+dc1394_bayer_Downsample_uint16(const uint16_t * bayer, uint16_t * rgb, int sx, int sy, int tile, int bits)
 {
     uint16_t *outR, *outG, *outB;
-    register int i, j;
+    int i, j;
     int tmp;
 
     switch (tile) {
@@ -1116,10 +1115,10 @@ dc1394_bayer_Downsample_uint16(const uint16_t *restrict bayer, uint16_t *restric
 
 /* coriander's Bayer decoding */
 dc1394error_t
-dc1394_bayer_Simple_uint16(const uint16_t *restrict bayer, uint16_t *restrict rgb, int sx, int sy, int tile, int bits)
+dc1394_bayer_Simple_uint16(const uint16_t * bayer, uint16_t * rgb, int sx, int sy, int tile, int bits)
 {
     uint16_t *outR, *outG, *outB;
-    register int i, j;
+    int i, j;
     int tmp, base;
 
     // sx and sy should be even
@@ -1306,34 +1305,34 @@ dc1394_bayer_Simple_uint16(const uint16_t *restrict bayer, uint16_t *restrict rg
    I've extended the basic idea to work with non-Bayer filter arrays.
    Gradients are numbered clockwise from NW=0 to W=7.
  */
-static const signed char bayervng_terms[] = {
-    -2,-2,+0,-1,0,0x01, -2,-2,+0,+0,1,0x01, -2,-1,-1,+0,0,0x01,
-    -2,-1,+0,-1,0,0x02, -2,-1,+0,+0,0,0x03, -2,-1,+0,+1,1,0x01,
-    -2,+0,+0,-1,0,0x06, -2,+0,+0,+0,1,0x02, -2,+0,+0,+1,0,0x03,
-    -2,+1,-1,+0,0,0x04, -2,+1,+0,-1,1,0x04, -2,+1,+0,+0,0,0x06,
-    -2,+1,+0,+1,0,0x02, -2,+2,+0,+0,1,0x04, -2,+2,+0,+1,0,0x04,
-    -1,-2,-1,+0,0,0x80, -1,-2,+0,-1,0,0x01, -1,-2,+1,-1,0,0x01,
-    -1,-2,+1,+0,1,0x01, -1,-1,-1,+1,0,0x88, -1,-1,+1,-2,0,0x40,
-    -1,-1,+1,-1,0,0x22, -1,-1,+1,+0,0,0x33, -1,-1,+1,+1,1,0x11,
-    -1,+0,-1,+2,0,0x08, -1,+0,+0,-1,0,0x44, -1,+0,+0,+1,0,0x11,
-    -1,+0,+1,-2,1,0x40, -1,+0,+1,-1,0,0x66, -1,+0,+1,+0,1,0x22,
-    -1,+0,+1,+1,0,0x33, -1,+0,+1,+2,1,0x10, -1,+1,+1,-1,1,0x44,
-    -1,+1,+1,+0,0,0x66, -1,+1,+1,+1,0,0x22, -1,+1,+1,+2,0,0x10,
-    -1,+2,+0,+1,0,0x04, -1,+2,+1,+0,1,0x04, -1,+2,+1,+1,0,0x04,
-    +0,-2,+0,+0,1,0x80, +0,-1,+0,+1,1,0x88, +0,-1,+1,-2,0,0x40,
-    +0,-1,+1,+0,0,0x11, +0,-1,+2,-2,0,0x40, +0,-1,+2,-1,0,0x20,
-    +0,-1,+2,+0,0,0x30, +0,-1,+2,+1,1,0x10, +0,+0,+0,+2,1,0x08,
-    +0,+0,+2,-2,1,0x40, +0,+0,+2,-1,0,0x60, +0,+0,+2,+0,1,0x20,
-    +0,+0,+2,+1,0,0x30, +0,+0,+2,+2,1,0x10, +0,+1,+1,+0,0,0x44,
-    +0,+1,+1,+2,0,0x10, +0,+1,+2,-1,1,0x40, +0,+1,+2,+0,0,0x60,
-    +0,+1,+2,+1,0,0x20, +0,+1,+2,+2,0,0x10, +1,-2,+1,+0,0,0x80,
-    +1,-1,+1,+1,0,0x88, +1,+0,+1,+2,0,0x08, +1,+0,+2,-1,0,0x40,
-    +1,+0,+2,+1,0,0x10
+static const int8_t bayervng_terms[] = {
+    -2,-2,+0,-1,0,(int8_t)0x01, -2,-2,+0,+0,1,(int8_t)0x01, -2,-1,-1,+0,0,(int8_t)0x01,
+    -2,-1,+0,-1,0,(int8_t)0x02, -2,-1,+0,+0,0,(int8_t)0x03, -2,-1,+0,+1,1,(int8_t)0x01,
+    -2,+0,+0,-1,0,(int8_t)0x06, -2,+0,+0,+0,1,(int8_t)0x02, -2,+0,+0,+1,0,(int8_t)0x03,
+    -2,+1,-1,+0,0,(int8_t)0x04, -2,+1,+0,-1,1,(int8_t)0x04, -2,+1,+0,+0,0,(int8_t)0x06,
+    -2,+1,+0,+1,0,(int8_t)0x02, -2,+2,+0,+0,1,(int8_t)0x04, -2,+2,+0,+1,0,(int8_t)0x04,
+    -1,-2,-1,+0,0,(int8_t)0x80, -1,-2,+0,-1,0,(int8_t)0x01, -1,-2,+1,-1,0,(int8_t)0x01,
+    -1,-2,+1,+0,1,(int8_t)0x01, -1,-1,-1,+1,0,(int8_t)0x88, -1,-1,+1,-2,0,(int8_t)0x40,
+    -1,-1,+1,-1,0,(int8_t)0x22, -1,-1,+1,+0,0,(int8_t)0x33, -1,-1,+1,+1,1,(int8_t)0x11,
+    -1,+0,-1,+2,0,(int8_t)0x08, -1,+0,+0,-1,0,(int8_t)0x44, -1,+0,+0,+1,0,(int8_t)0x11,
+    -1,+0,+1,-2,1,(int8_t)0x40, -1,+0,+1,-1,0,(int8_t)0x66, -1,+0,+1,+0,1,(int8_t)0x22,
+    -1,+0,+1,+1,0,(int8_t)0x33, -1,+0,+1,+2,1,(int8_t)0x10, -1,+1,+1,-1,1,(int8_t)0x44,
+    -1,+1,+1,+0,0,(int8_t)0x66, -1,+1,+1,+1,0,(int8_t)0x22, -1,+1,+1,+2,0,(int8_t)0x10,
+    -1,+2,+0,+1,0,(int8_t)0x04, -1,+2,+1,+0,1,(int8_t)0x04, -1,+2,+1,+1,0,(int8_t)0x04,
+    +0,-2,+0,+0,1,(int8_t)0x80, +0,-1,+0,+1,1,(int8_t)0x88, +0,-1,+1,-2,0,(int8_t)0x40,
+    +0,-1,+1,+0,0,(int8_t)0x11, +0,-1,+2,-2,0,(int8_t)0x40, +0,-1,+2,-1,0,(int8_t)0x20,
+    +0,-1,+2,+0,0,(int8_t)0x30, +0,-1,+2,+1,1,(int8_t)0x10, +0,+0,+0,+2,1,(int8_t)0x08,
+    +0,+0,+2,-2,1,(int8_t)0x40, +0,+0,+2,-1,0,(int8_t)0x60, +0,+0,+2,+0,1,(int8_t)0x20,
+    +0,+0,+2,+1,0,(int8_t)0x30, +0,+0,+2,+2,1,(int8_t)0x10, +0,+1,+1,+0,0,(int8_t)0x44,
+    +0,+1,+1,+2,0,(int8_t)0x10, +0,+1,+2,-1,1,(int8_t)0x40, +0,+1,+2,+0,0,(int8_t)0x60,
+    +0,+1,+2,+1,0,(int8_t)0x20, +0,+1,+2,+2,0,(int8_t)0x10, +1,-2,+1,+0,0,(int8_t)0x80,
+    +1,-1,+1,+1,0,(int8_t)0x88, +1,+0,+1,+2,0,(int8_t)0x08, +1,+0,+2,-1,0,(int8_t)0x40,
+    +1,+0,+2,+1,0,(int8_t)0x10
 }, bayervng_chood[] = { -1,-1, -1,0, -1,+1, 0,+1, +1,+1, +1,0, +1,-1, 0,-1 };
 
 dc1394error_t
-dc1394_bayer_VNG(const uint8_t *restrict bayer,
-                 uint8_t *restrict dst, int sx, int sy,
+dc1394_bayer_VNG(const uint8_t * bayer,
+                 uint8_t * dst, int sx, int sy,
                  dc1394color_filter_t pattern)
 {
     const int height = sy, width = sx;
@@ -1396,7 +1395,7 @@ dc1394_bayer_VNG(const uint8_t *restrict bayer,
             }
         }
     }
-    brow[4] = calloc (width*3, sizeof **brow);
+    brow[4] = (uint8_t (*)[3]) calloc ((size_t)width*3, sizeof **brow);
     //merror (brow[4], "vng_interpolate()");
     for (row=0; row < 3; row++)
         brow[row] = brow[4] + row*width;
@@ -1458,8 +1457,8 @@ dc1394_bayer_VNG(const uint8_t *restrict bayer,
 
 
 dc1394error_t
-dc1394_bayer_VNG_uint16(const uint16_t *restrict bayer,
-                        uint16_t *restrict dst, int sx, int sy,
+dc1394_bayer_VNG_uint16(const uint16_t * bayer,
+                        uint16_t * dst, int sx, int sy,
                         dc1394color_filter_t pattern, int bits)
 {
     const int height = sy, width = sx;
@@ -1523,7 +1522,7 @@ dc1394_bayer_VNG_uint16(const uint16_t *restrict bayer,
             }
         }
     }
-    brow[4] = calloc (width*3, sizeof **brow);
+    brow[4] = (uint16_t (*)[3]) calloc ((size_t)width*3, sizeof **brow);
     //merror (brow[4], "vng_interpolate()");
     for (row=0; row < 3; row++)
         brow[row] = brow[4] + row*width;
@@ -1595,7 +1594,7 @@ static const double xyz_rgb[3][3] = {                        /* XYZ from RGB */
   { 0.412453, 0.357580, 0.180423 },
   { 0.212671, 0.715160, 0.072169 },
   { 0.019334, 0.119193, 0.950227 } };
-static const float d65_white[3] = { 0.950456, 1, 1.088754 };
+static const float d65_white[3] = { 0.950456f, 1.f, 1.088754f };
 
 static void cam_to_cielab (uint16_t cam[3], float lab[3]) /* [SA] */
 {
@@ -1634,8 +1633,8 @@ static void cam_to_cielab (uint16_t cam[3], float lab[3]) /* [SA] */
 #define TS 256                /* Tile Size */
 
 dc1394error_t
-dc1394_bayer_AHD(const uint8_t *restrict bayer,
-                 uint8_t *restrict dst, int sx, int sy,
+dc1394_bayer_AHD(const uint8_t * bayer,
+                 uint8_t * dst, int sx, int sy,
                  dc1394color_filter_t pattern)
 {
     int i, j, top, left, row, col, tr, tc, fc, c, d, val, hm[2];
@@ -1809,8 +1808,8 @@ dc1394_bayer_AHD(const uint8_t *restrict bayer,
 }
 
 dc1394error_t
-dc1394_bayer_AHD_uint16(const uint16_t *restrict bayer,
-                        uint16_t *restrict dst, int sx, int sy,
+dc1394_bayer_AHD_uint16(const uint16_t * bayer,
+                        uint16_t * dst, int sx, int sy,
                         dc1394color_filter_t pattern, int bits)
 {
     int i, j, top, left, row, col, tr, tc, fc, c, d, val, hm[2];
@@ -1980,7 +1979,7 @@ dc1394_bayer_AHD_uint16(const uint16_t *restrict bayer,
 }
 
 dc1394error_t
-dc1394_bayer_decoding_8bit(const uint8_t *restrict bayer, uint8_t *restrict rgb, uint32_t sx, uint32_t sy, dc1394color_filter_t tile, dc1394bayer_method_t method)
+dc1394_bayer_decoding_8bit(const uint8_t * bayer, uint8_t * rgb, uint32_t sx, uint32_t sy, dc1394color_filter_t tile, dc1394bayer_method_t method)
 {
     switch (method) {
     case DC1394_BAYER_METHOD_NEAREST:
@@ -2006,7 +2005,7 @@ dc1394_bayer_decoding_8bit(const uint8_t *restrict bayer, uint8_t *restrict rgb,
 }
 
 dc1394error_t
-dc1394_bayer_decoding_16bit(const uint16_t *restrict bayer, uint16_t *restrict rgb, uint32_t sx, uint32_t sy, dc1394color_filter_t tile, dc1394bayer_method_t method, uint32_t bits)
+dc1394_bayer_decoding_16bit(const uint16_t * bayer, uint16_t * rgb, uint32_t sx, uint32_t sy, dc1394color_filter_t tile, dc1394bayer_method_t method, uint32_t bits)
 {
     switch (method) {
     case DC1394_BAYER_METHOD_NEAREST:

@@ -20,6 +20,12 @@ set(WARNINGS_AS_ERRORS OFF)
 set_project_warnings(project_warnings)
 
 
+configure_file(src/bayer.c src/bayer.cpp COPYONLY)
+add_library(debayer_cpp src/bayer.cpp src/bayer.h)
+set_target_properties(debayer_cpp PROPERTIES LINKER_LANGUAGE CXX)
+target_include_directories(debayer_cpp PRIVATE src)
+target_link_libraries(debayer_cpp m project_options project_warnings)
+
 add_library(debayer src/bayer.c src/bayer.h)
 set_target_properties(debayer PROPERTIES LINKER_LANGUAGE C)
 target_link_libraries(debayer m project_options project_warnings)

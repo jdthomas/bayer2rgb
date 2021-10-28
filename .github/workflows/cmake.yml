@@ -18,6 +18,8 @@ jobs:
         os: ['ubuntu-latest', 'macos-latest']
     steps:
     - uses: actions/checkout@v2
+      with:
+        submodules: recursive
 
       # - name: Run vcpkg
       #   uses: lukka/run-vcpkg@v10

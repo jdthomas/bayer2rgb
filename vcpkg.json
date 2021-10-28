@@ -1,0 +1,9 @@
+{
+  "name": "bayer2rgb",
+  "version-string": "1.0.0",
+  "dependencies": [
+    "fmt",
+    "gtest",
+    "benchmark"
+  ]
+}

@@ -1,5 +1,5 @@
 window.BENCHMARK_DATA = {
-  "lastUpdate": 1635548378076,
+  "lastUpdate": 1635549326789,
   "repoUrl": "https://github.com/jdthomas/bayer2rgb",
   "entries": {
     "Benchmark": [
@@ -360,6 +360,126 @@ window.BENCHMARK_DATA = {
             "value": 1315367042.9999807,
             "unit": "ns/iter",
             "extra": "iterations: 1\ncpu: 1315057339.9999993 ns\nthreads: 1"
+          }
+        ]
+      },
+      {
+        "commit": {
+          "author": {
+            "email": "jeffdthomas@gmail.com",
+            "name": "Jeff Thomas",
+            "username": "jdthomas"
+          },
+          "committer": {
+            "email": "jeffdthomas@gmail.com",
+            "name": "Jeff Thomas",
+            "username": "jdthomas"
+          },
+          "distinct": true,
+          "id": "baa49fbd58ab96bd85847fe44881792b39d0afde",
+          "message": "Update to latest lib1394 code",
+          "timestamp": "2021-10-29T16:11:13-07:00",
+          "tree_id": "a0542c6523c2a9756c3a1afda63cb7939983f777",
+          "url": "https://github.com/jdthomas/bayer2rgb/commit/baa49fbd58ab96bd85847fe44881792b39d0afde"
+        },
+        "date": 1635549325998,
+        "tool": "googlecpp",
+        "benches": [
+          {
+            "name": "BM_8bpp/0",
+            "value": 15521055.044443857,
+            "unit": "ns/iter",
+            "extra": "iterations: 45\ncpu: 15488376.266666668 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_8bpp/1",
+            "value": 16689654.809523193,
+            "unit": "ns/iter",
+            "extra": "iterations: 42\ncpu: 16686117.47619048 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_8bpp/2",
+            "value": 18305446.00000014,
+            "unit": "ns/iter",
+            "extra": "iterations: 38\ncpu: 18305167.15789474 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_8bpp/3",
+            "value": 56366154.499999754,
+            "unit": "ns/iter",
+            "extra": "iterations: 12\ncpu: 56361170.916666664 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_8bpp/4",
+            "value": 4105140.417646968,
+            "unit": "ns/iter",
+            "extra": "iterations: 170\ncpu: 4104174.65882353 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_8bpp/5",
+            "value": 65902667.81818276,
+            "unit": "ns/iter",
+            "extra": "iterations: 11\ncpu: 65894058.27272728 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_8bpp/6",
+            "value": 1019048325,
+            "unit": "ns/iter",
+            "extra": "iterations: 1\ncpu: 1019016240.000001 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_8bpp/7",
+            "value": 1026656367.0000153,
+            "unit": "ns/iter",
+            "extra": "iterations: 1\ncpu: 1026574988.9999993 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_16bpp/0",
+            "value": 19055504.27027019,
+            "unit": "ns/iter",
+            "extra": "iterations: 37\ncpu: 19054220.40540539 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_16bpp/1",
+            "value": 26851856.538461156,
+            "unit": "ns/iter",
+            "extra": "iterations: 26\ncpu: 26847840.53846153 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_16bpp/2",
+            "value": 23142607.36666635,
+            "unit": "ns/iter",
+            "extra": "iterations: 30\ncpu: 23141110.166666698 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_16bpp/3",
+            "value": 60067346.50000093,
+            "unit": "ns/iter",
+            "extra": "iterations: 12\ncpu: 60060946.75000003 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_16bpp/4",
+            "value": 5244353.44961238,
+            "unit": "ns/iter",
+            "extra": "iterations: 129\ncpu: 5244034.914728687 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_16bpp/5",
+            "value": 89668139.25000139,
+            "unit": "ns/iter",
+            "extra": "iterations: 8\ncpu: 89667168.3750001 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_16bpp/6",
+            "value": 1012579964.9999863,
+            "unit": "ns/iter",
+            "extra": "iterations: 1\ncpu: 1012503174.999999 ns\nthreads: 1"
+          },
+          {
+            "name": "BM_16bpp/7",
+            "value": 1022967757.0000036,
+            "unit": "ns/iter",
+            "extra": "iterations: 1\ncpu: 1022894186.9999986 ns\nthreads: 1"
           }
         ]
       }

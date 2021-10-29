@@ -179,9 +179,7 @@ TEST(Bayer2RgbTest, TestES8bpp) {
   auto result = dc1394_bayer_decoding_8bit(
       tiny_bayer.data(), tiny_rgb.data(), width, height,
       DC1394_COLOR_FILTER_RGGB, DC1394_BAYER_METHOD_EDGESENSE);
-  // EXPECT_EQ(result, DC1394_SUCCESS);
-  EXPECT_EQ(result, DC1394_FUNCTION_NOT_SUPPORTED);
-  return;
+  EXPECT_EQ(result, DC1394_SUCCESS);
 
   fmt::print("E: {}\n", tiny_rgb_expected);
   fmt::print("A: {}\n", tiny_rgb);

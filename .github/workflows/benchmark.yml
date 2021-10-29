@@ -1,0 +1,45 @@
+name: Benchmark
+
+on:
+  push:
+    branches: [ master, wip ]
+
+permissions:
+  deployments: write
+  contents: write
+
+jobs:
+  benchmark:
+    name: Performance regression check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Configure CMake
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config Release
+
+      - name: Run benchmark
+        working-directory: ${{github.workspace}}/build
+        run: ./benchmark/bayer2rgbBenchmarks --benchmark_out_format=json --benchmark_out=benchmark_result.json
+
+      - name: Download previous benchmark data
+        uses: actions/cache@v1
+        with:
+          path: ./cache
+          key: ${{ runner.os }}-benchmark
+
+      - name: Store benchmark result
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          tool: 'googlecpp'
+          output-file-path: ${{github.workspace}}/build/benchmark_result.json
+          # external-data-json-path: ./cache/benchmark-data.json
+          # fail-on-alert: true
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+
